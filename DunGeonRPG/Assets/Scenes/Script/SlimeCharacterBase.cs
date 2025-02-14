@@ -8,14 +8,15 @@ public class SlimeCharacterBase : MonoBehaviour
 {
     private Animator animator;
     private SlimeCharacterController slimeCharacterController;
-    private CharacterController characterController;
+    private CharacterController charactercontroller;
     private Vector2 movement;
-    private float horizontalBlend;
-    private float verticalBlend;
+
     private float animatorRun;
     private bool OnJump;
+    [SerializeField] private float Runspeed;
+    [SerializeField] private float Walkspeed;
+    private float currentSpeed;
 
-    public float runSpeed = 2f;
     public bool OnLeftShiftHold = false;   //false : 달리기 눌렀다가 떗다가 할지 / true : 달리기 상태에서 다시 LeftShift를 누를 때까지 달리기가 유지 될지의 여부
     public bool OnRun;
 
@@ -25,7 +26,7 @@ public class SlimeCharacterBase : MonoBehaviour
     {
         animator = GetComponent<Animator>();
         slimeCharacterController = GetComponent<SlimeCharacterController>();
-        characterController = GetComponent<CharacterController>();
+        charactercontroller = GetComponent<CharacterController>();
     }
 
     void Start()
@@ -37,19 +38,59 @@ public class SlimeCharacterBase : MonoBehaviour
     void Update()
     {
         SlimeRunning();
-        JumpAndGravity();
+        Gravity();
+        Move();
+    }
+    [SerializeField] private LayerMask layer;
+    [SerializeField] private float ray_maxdistance = 0.05f;
+    //private Collider[] GroundCollider;
+    private bool InGrounded;
+    private float gravity = -9.81f;
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.red;
+        Gizmos.DrawLine(transform.position, transform.position - new Vector3(0f, ray_maxdistance, 0f));
+    }
+    private void Gravity()
+    {
+        InGrounded = Physics.Raycast(transform.position, transform.position - Vector3.up, ray_maxdistance, layer, QueryTriggerInteraction.Ignore);
+        if(InGrounded)
+        {
+            gravity = 0f;
+        }
+        else
+        {
+            gravity = -9.81f;
+            Vector3 FallsGravity = Vector3.up * gravity * Time.deltaTime / 2;
+            charactercontroller.Move(FallsGravity);
+        }
     }
 
-    public void Move(Vector2 Input)
-    {
-        movement = ((transform.right * Input.x) + (transform.forward * Input.y)) * runSpeed;
-        horizontalBlend = Mathf.Lerp(horizontalBlend, Input.x, 10 * Time.deltaTime);
-        verticalBlend = Mathf.Lerp(verticalBlend, Input.y, 10 * Time.deltaTime);
-        
-        characterController.Move(movement);
 
-        animator.SetFloat("Horizontal", horizontalBlend);
-        animator.SetFloat("Vertical", verticalBlend);
+    private void Rotate()
+    {
+
+    }
+
+    private void Move()
+    {
+        movement.x = InputSystem.Instance.Movement.x;
+        movement.y = InputSystem.Instance.Movement.y;
+        Vector3 movec = (transform.forward * movement.y + transform.right * movement.x) * currentSpeed * Time.deltaTime;
+        charactercontroller.Move(movec);
+
+        if(OnRun)
+        {
+            currentSpeed = Runspeed;
+        }
+        else
+        {
+            currentSpeed = Walkspeed;
+        }
+
+        animator.SetFloat("Horizontal", movement.x);
+        animator.SetFloat("Vertical", movement.y);
         animator.SetFloat("Magnitude", movement.magnitude);
         animator.SetFloat("Run", animatorRun);
     }
@@ -58,12 +99,10 @@ public class SlimeCharacterBase : MonoBehaviour
         if(OnRun)
         {
             animatorRun = 1f;
-            runSpeed = 2f;
         }
         else
         {
             animatorRun = 0f;
-            runSpeed = 1f;
         }
     }
 
@@ -102,7 +141,8 @@ public class SlimeCharacterBase : MonoBehaviour
     {
         OnJump = true;
     }
-    private void JumpAndGravity()
+
+    private void Jumping()
     {
 
     }

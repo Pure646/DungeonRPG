@@ -6,15 +6,14 @@ using UnityEngine;
 public class SlimeCharacterController : MonoBehaviour
 {
     private SlimeCharacterBase slimeCharacterBase;
-    private Vector2 movement;
+    private float Trans_Y;
+
     private void Awake()
     {
         slimeCharacterBase = GetComponent<SlimeCharacterBase>();
     }
     private void Start()
     {
-        movement = InputSystem.Instance.Movement;
-
         InputSystem.Instance.Jump += Jumping;
         InputSystem.Instance.RightShiftHoldingLocked += RightShiftLocked;
         InputSystem.Instance.LeftShiftRunning += Running;
@@ -23,7 +22,24 @@ public class SlimeCharacterController : MonoBehaviour
 
     private void Update()
     {
-        Moving();
+        TransRotation();
+    }
+
+    [SerializeField] private Transform cameraAim;
+    private float rotation_X = 0f;
+    private float rotation_Y = 0f;
+
+    private void TransRotation()
+    {
+        float camera_X = InputSystem.Instance.Looking.x * -1f;
+        float camera_Y = InputSystem.Instance.Looking.y * 1f;
+
+        rotation_Y += camera_X;
+        rotation_X -= camera_Y;
+
+        rotation_X = Mathf.Clamp(rotation_X, -80f, 80f);
+
+        cameraAim.rotation = Quaternion.Euler(rotation_X, rotation_Y, 0);
     }
 
     private void Walking()
@@ -51,9 +67,5 @@ public class SlimeCharacterController : MonoBehaviour
     private void Jumping()
     {
         
-    }
-    private void Moving()
-    {
-        slimeCharacterBase.Move(movement);
     }
 }
